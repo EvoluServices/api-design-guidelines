@@ -1,7 +1,7 @@
 # Especificação OpenAPI
 
 * Recomendado: O arquivo OpenAPI deve ser capaz de gerar código cliente de maneira eficaz. Ou seja, usando um gerador de código automático, o código gerado deve compilar e ser legível aos desenvolvidores.
-* Todos campos `description` deve terminar com ponto final;
+* Todos campos `description` devem terminar com ponto final;
 
 ## Endpoint
 
