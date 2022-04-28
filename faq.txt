@@ -1,0 +1,253 @@
+FAQ ao projetar APIs
+Sumário
+Interface com o cliente
+Princípios
+SOAP ou REST?
+Primeiro a interface ou a implementação?
+Usar camelCase ou snake_case?
+Variáveis em português ou inglês? Adjetivo antes ou depois do substantivo?
+Devo criar mais estruturas aninhadas ou estruturas menos aninhadas?
+Unidades de tempo, como date e datetime, devem usar algum formato específico? E um intervalo de tempo? E uma duração de tempo? Deve sempre incluir timezone?
+Como representar dinheiro? E em dólar?
+Como representar IDs? Devo obscurecer ou não?
+Como implementar a autenticação das APIs?
+O que fazer com requisições POST duplicadas? Devo criar um Header custom para idempotência?
+Como preparar a API para extensão?
+Versionamento da API
+Como defasar uma API? Como defasar um parâmetro de uma API?
+Versionamento de API, como criar uma nova versão não retrocompatível da minha API?
+REST/HTTP
+Nome de ações em recurso, singular? plural? qual case?
+Como eu organizo ações numa URL REST? Quando é aplicado a um recurso, e quando é aplicado a mais de um recurso? E quando é aplicado a um sub-recurso?
+Como organizar o acesso a sub-recursos? Precisa ter acesso ao recurso-pai?
+A identificação de um sub-recurso deve incluir a identificação de um recurso-pai? /pai/1/filho/13 ou /filho/13 ou /pai/filho/13
+Retornar ou não os dados do objeto criado no POST?
+Como eu nomeio a URL do recurso? singular? plural? qual case? Uso qual método HTTP? (indicar outro documento)
+Quando uma informação é sensível, quando eu dou 401, 403 e quando eu dou 404?
+Como eu devolvo os erros?
+Se um campo no retorno é opcional, omito ele ou eu retorno null?
+Se um campo na request é opcional, ele precisa ser omitido ou eu devo aceitar nulo? E vazio para strings e vazio se der trim? E lista vazia ([]) para listas?
+Quando eu devo usar os redirects? Usar para chamadas async?
+Como responder a requisições de processamento assíncrono?
+Operação
+Como eu lido com os logs?
+Onde eu salvo arquivos? no disco rígido local?
+Como eu preparo minha API para produção?
+Como eu preparo a minha aplicação para escalabilidade? Como eu trabalho com uma aplicação stateless? E a sessão?
+O que precisa ser monitorado no health check?
+Onde eu devo guardar as configurações da minha API? Que cuidados eu devo ter?
+Como lidar com migrations durante o deploy para produção?
+Respostas
+Interface com o cliente
+Princípios
+
+SOAP ou REST?
+	
+REST é convenção da EvoluServices. Não vemos motivo para exceções.
+
+Primeiro a interface ou a implementação?
+
+Recomendamos projetar a interface da API antes de pensar na implementação e documentar isso através do versionamento num repositório Git de um arquivo no formato Swagger ou OpenAPI.
+Posteriormente, antes da publicação da API em produção, este arquivo de especificação da API será revisado pelo time de integrações. E, se necessário, indicarão as correções a serem feitas.
+
+Usar camelCase ou snake_case?
+
+Use camelCase. Esta é a convenção da EvoluServices.
+
+Variáveis em português ou inglês? Adjetivo antes ou depois do substantivo?
+
+	Inglês. Conforme a língua inglesa, o adjetivo deve vir antes do substantivo. Pequenos conectivos como “of” ou “the” podem e devem ser omitidos.
+
+Exemplo errado: transacaoAgendada ou transactionScheduled
+Exemplo correto: scheduledTransaction
+Exemplo não recomendado: schedulingOfTheTransaction ou schedulingOfTransaction
+Exemplo recomendado: transactionScheduling
+
+Devo criar mais estruturas aninhadas ou estruturas menos aninhadas?
+
+	Recomendamos criar menos estruturas aninhadas. A transferência das estruturas  de implementação para a interface são um risco importante caso a interface não for projetada antes de implementação. Visando a facilidade do cliente consumir a API, menos estruturas irão diminuir a curva de aprendizado do cliente, em relação a mais estruturas.
+	Uma implicação disso é que estruturas com um único objeto na raíz do JSON estão proibidas. A menos que existam outras estruturas opcionais (portanto omitidas) na raíz do JSON.
+
+Exemplo não recomendado:
+{
+  "transaction": {
+    "transactionNumber": 1234678910,
+    "account": {
+      "number": "1234-5",
+"agency": "012"
+    }
+  }
+}
+Exemplo recomendado:
+{
+  "transactionNumber": 1234678910,
+  "accountNumber": "1234-5",
+  "accountAgency": "012"
+}
+
+Unidades de tempo, como date e datetime devem usar algum formato específico? E um intervalo de tempo? E uma duração de tempo? Deve sempre incluir timezone?
+
+Não subestime a dificuldade de transmitir um horário correto, manter a interoperabilidade e ser humanamente legível, principalmente se ele puder ser enviado a outros fuso-horários. Visando preparar as APIs para uso internacional ou mesmo em outros fusos brasileiros, siga os padrões a seguir.
+
+As datas que indicam um instante, devem usar o formato “YYYY-MM-DDTHH:mm:ssZ” para datas UTC (com precisão de segundos, sem frações de segundo, a não ser que sua API necessite muito das frações de segundo). O “Z” final indica que o horário é UTC. O “T” entre o dia e a hora serve como separador. No lugar do "T", também pode-se usar “ “ (espaço, ficando assim: “YYYY-MM-DD HH:mm:ssZ”).
+Para todas as timezones que não são UTC, usa-se “+” ou “-” e as horas de diferença do UTC. Se a data é 2022-04-27 às 11:48:35 da manhã em UTC, em Brasília, que tem timezone -3 nesse período do ano, ficaria “2022-04-27T08:48:35-03:00”. E este mesmo horário em Paris seria “2022-04-27T13:48:35+02:00”.
+Atenção, se sua API está usando “-00:00” como timezone, significa que ela está com o timezone desconhecido. Ela precisa ser alterada para usar ou UTC (“Z” ou “+00:00”).
+O sufixo recomendado para um instante de tempo em string é “Datetime”.
+Dúvidas? Consulte https://www.ietf.org/rfc/rfc3339.txt.
+
+Exemplos errados:
+{
+	“paymentDate”: “2022-04-17 10:47:36” /* Sufixo errado e não inclui a timezone */
+}
+{
+	“paymentDatetime”: “2022-04-17 10:47:36-00:00” /* Timezone não especificada, pois -00:00 indica isso, já +00:00 indica UTC */
+}
+Exemplos corretos:
+{
+	“paymentDatetime”: “2022-04-17 06:47:36-04:00”
+}
+{
+	“paymentDatetime”: “2022-04-17 10:47:36+00:00”
+}
+{
+	“paymentDatetime”: “2022-04-17 10:47:36Z”
+}
+
+
+Quando estamos falando de uma data sem o horário do dia, o formato da data usado deve ser “YYYY-MM-DD” com sufixo “Date”, o que representa um intervalo de tempo de um dia, podendo indicar o início do dia ou o final do dia dependendo do contexto. Recomendamos adicionar mais um atributo irmão ao campo de data que identifique a timezone com sufixo “Timezone”.
+Exemplo errado:
+{
+	“paymentDate”: “2022-04-17” /* O cliente não tem como saber quando o dia começou ou terminou */
+}
+
+Exemplo correto:
+{
+	“paymentDate”: “2022-04-17”,
+	“paymentDateTimezone”: “-03:00”
+}
+Este exemplo, indica um intervalo do instante “2022-04-16T21:00:00-03:00” até o instante “2022-04-17T21:00:00-03:00” usando a definição acima de instante. Isso deve ficar claro na especificação da API.
+
+Para facilitar a integração de um cliente, numa API que recebe um dia, recomendamos receber mais um parâmetro com a timezone para que o cliente possa especificar a data de maneira não-ambígua. Não use nomes de localizações ou siglas de timezones pois o horário de verão de cada região é imprevisível. Receba o timezone no formato “+HH:mm” ou “-HH:mm”, assim o cliente fica responsável por erros de ajustes de horário de verão. Se o valor for “-00:00”, use o timezone vigente de brasília (considerando o possível ajuste do horário de verão), e se for “+00:00”, use o timezone UTC.
+
+Se a origem da do campo de data for uma API que a EvoluServices consome,  informe-se qual fuso horário ela usa e adicione este à resposta como indicado acima.
+
+(Qual o padrão para durações de tempo?)
+
+Como representar dinheiro? E em dólar?
+
+	Sempre que houver um valor monetário, ele deve ser acompanhado de um atributo ‘currency’ (no padrão ISO_4217) que indica a moeda do valor do dinheiro. O valor do dinheiro deve ser um valor inteiro representando a menor unidade daquela moeda. No caso do real brasileiro, centavos.
+
+Exemplo errado 1:
+{
+  "transactionNumber": 1234678910,
+  "amount": 5.0 /* O valor não é inteiro, nem está em centavos */
+}
+
+Exemplo errado 2:
+{
+  "transactionNumber": 1234678910,
+  "amount": 500 /* Não há atributo ‘currency’ */
+}
+
+Exemplo correto:
+{
+  "transactionNumber": 1234678910,
+  "amount": 500,
+  "currency": "BRL"
+}
+
+
+Como representar IDs? Devo obscurecer (“viewId”) ou não?
+	
+Use strings para representar identificadores na interface com o cliente. É mais flexível que números.
+Não obscureça os identificadores, também conhecido como “viewId”. Isso criaria uma dependência entre diferentes APIs, causando inconsistências de comportamento. Recomendamos gerar um ID não sequencial com um prefixo identificando o tipo.
+
+Exemplo não recomendado (valores pequenos indicam ser sequenciais, então um hacker saberia diversos IDs válidos e poderia preparar um ataque):
+51
+52
+110
+
+Exemplo não recomendado (viewId é um ID sequencial disfarçado, e sua segurança é questionável):
+"NTE0Mg*3"
+"NTE4MQ*3"
+
+Exemplo recomendado:
+"tran_cf353c17-6639-44ec-8d32-c0b73461405b"
+"user_cbd87d08-f811-46ba-8f26-83013dc870b4"
+
+O prefixo ajuda a contextualizar o UUID, quando ele é encontrado fora de contexto. Isso é útil para qualquer pessoa saber o que esperar de um ID. O prefixo deve conter até 10 caracteres mais o underline final. Duas entidades diferentes não podem ter o mesmo prefixo.(como podemos organizar para garantir que não vamos ter o mesmo prefixo?)
+
+Como implementar a autenticação das APIs?
+
+	Todas as APIs devem aceitar a autenticação OAuth 2.0 através do header “Authorization: Bearer <JWT>”. O emissor do JWT é o Oathkeeper. Serviço do qual as APIs devem consultar seu JWKS na URL https://<oathkeeper.domain>/.well-known/jwks.json. O domínio varia de acordo com o ambiente:
+
+Ambiente
+<protocolo>://<dominio>
+Local
+http://localhost:4456
+Staging
+https://oathkeeper.staging.evoluservices.com
+Produção
+https://oathkeeper.evoluservices.com
+
+
+
+O que fazer com requisições POST duplicadas? Devo criar um Header custom para idempotência?
+
+	Imagine que o cliente quer criar um recurso, e na primeira requisição POST ele não recebe a resposta por conta de uma falha de rede. Ou a requisição chegou à API ou não. Se chegou, o recurso já foi criado. Se não, o recurso ainda não foi criado. Este tipo de problema normalmente é resolvido com um retry com a mesma requisição. Mas nesse caso, se o recurso for uma transação por exemplo, ele não poderia arriscar a fazer o retry e criar duas transações ao invés de uma. Também, ele não pode arriscar não ter criado a primeira transação.
+	É para resolver esse tipo de problema que recomendamos que seja criada uma camada de idempotência na sua API. Basta receber um header “Idempotency-Key: <chave gerada pelo cliente. Um UUID por exemplo.>” que assim o cliente pode indicar para a API se é um segundo recurso ou então o mesmo que ele está tentando criar. Desta forma, se na segunda requisição o header de idempotência já existir, a API só retorna a resposta cacheada para tal requisição.
+	Caso a chave de idempotência no header bata com uma requisição anterior, mas o conteúdo da requisição não bata, então a API deve retornar um erro 400 indicando um erro de idempotência.
+
+Como preparar a API para extensão?
+
+	Implemente apenas funcionalidades você já tem demanda, ou seja, você tem certeza que será utilizado por algum cliente. Evite desenvolver funcionalidades que podem não ser utilizadas ou retornar parâmetros que ainda não tem uso.
+	Aplique os princípios SOLID ao programar. Se você não souber encaixar todos os princípios num todo coeso, recomendamos usar a arquitetura Clean Architecture (Bob Martin), já que ao entender esta arquitetura, você não terá muita escolha senão aplicar pelo menos 4 dos 5 princípios (você pode usar essa, essa e essa referência. Também temos um projeto nesta arquitetura no Gerrit).
+	Se for o caso de que uma mudança não pode ser realizada pois irá quebrar as aplicações do cliente, crie a próxima versão da sua API. Para mudar a versão, consulte a seção de “Versionamento da API”.
+Versionamento da API
+Como defasar uma API? Como defasar um parâmetro de uma API?
+
+Para defasar uma API e posteriormente para de dar manutenção à ela, primeiro é necessário:
+Subir nova API que substituirá a anterior;
+Parar de aceitar novos clientes para a API antiga e indicar somente a nova forma de integração;
+Notificar todos os clientes da API antiga e dar um prazo para a migração para a nova versão;
+Garantir que a migração já foi feita por todos os clientes;
+Remover a API antiga do ambiente de produção.
+
+Versionamento de API, como criar uma nova versão não retrocompatível da minha API?
+
+Para saber como versionar sua API, consulte o API Design Guidelines na seção “Versionamento da API”.
+REST/HTTP
+Nome de ações em recurso, singular? plural? qual case?
+
+	Para saber como um endpoint deve expor o recurso para acesso, consulte a API Design Guidelines na seção “URL” > “Paths”.
+
+Como eu organizo ações numa URL REST? Quando é aplicado a um recurso, e quando é aplicado a mais de um recurso? E quando é aplicado a um sub-recurso?
+
+	Existe a necessidade de haver ações além do GET, POST, DELETE, PUT no recursos???
+	Digamos que o cliente queira realizar um split num pagamento, como ficaria a URL?
+	POST /apis/v2/payments/{id}/split
+
+Como organizar o acesso a sub-recursos? Precisa ter acesso ao recurso-pai?
+A identificação de um sub-recurso deve incluir a identificação de um recurso-pai? /pai/1/filho/13 ou /filho/13 ou /pai/filho/13
+Retornar ou não os dados do objeto criado no POST?
+Como eu nomeio a URL do recurso? singular? plural? qual case? Uso qual método HTTP? (indicar outro documento)
+Quando uma informação é sensível, quando eu dou 401, 403 e quando eu dou 404?
+Como eu devolvo os erros?
+Se um campo no retorno é opcional, omito ele ou eu retorno null?
+Se um campo na request é opcional, ele precisa ser omitido ou eu devo aceitar nulo? E vazio para strings e vazio se der trim? E [] para listas?
+Quando eu devo usar os redirects? Usar para chamadas async?
+Como responder a requisições de processamento assíncrono?
+Operação
+Como eu lido com os logs?
+	
+	(Mando para o graylog ou mando para o sysout?)
+
+Onde eu salvo arquivos? no disco rígido local?
+	
+	Pensando na escalabilidade da aplicação, esperasse que ela rode em um container.  É melhor que 
+
+Como eu preparo minha API para produção? (+ fazer um ambiente similar em desenvolvimento)
+Como eu preparo a minha aplicação para escalabilidade? Como eu trabalho com uma aplicação stateless? E a sessão?
+O que precisa ser monitorado no health check? https://aws.amazon.com/pt/builders-library/implementing-health-checks/
+Onde eu devo guardar as configurações da minha API? Que cuidados eu devo ter?
+Como lidar com migrations durante o deploy para produção?
