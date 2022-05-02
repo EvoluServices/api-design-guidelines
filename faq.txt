@@ -17,14 +17,12 @@ Versionamento da API
 Como defasar uma API? Como defasar um parâmetro de uma API?
 Versionamento de API, como criar uma nova versão não retrocompatível da minha API?
 REST/HTTP
-Nome de ações em recurso, singular? plural? qual case?
+Como nomear URLs que acessam recursos? Singular? Plural? Qual case?
+Como nomear URLs que acessam sub-recursos? Precisa incluir o recurso pai na URL?
 Como eu organizo ações numa URL REST? Quando é aplicado a um recurso, e quando é aplicado a mais de um recurso? E quando é aplicado a um sub-recurso?
-Como organizar o acesso a sub-recursos? Precisa ter acesso ao recurso-pai?
-A identificação de um sub-recurso deve incluir a identificação de um recurso-pai? /pai/1/filho/13 ou /filho/13 ou /pai/filho/13
 Retornar ou não os dados do objeto criado no POST?
-Como eu nomeio a URL do recurso? singular? plural? qual case? Uso qual método HTTP? (indicar outro documento)
-Quando uma informação é sensível, quando eu dou 401, 403 e quando eu dou 404?
 Como eu devolvo os erros?
+Quando uma informação é sensível, quando eu dou 401, 403 e quando eu dou 404?
 Se um campo no retorno é opcional, omito ele ou eu retorno null?
 Se um campo na request é opcional, ele precisa ser omitido ou eu devo aceitar nulo? E vazio para strings e vazio se der trim? E lista vazia ([]) para listas?
 Quando eu devo usar os redirects? Usar para chamadas async?
@@ -52,7 +50,7 @@ Posteriormente, antes da publicação da API em produção, este arquivo de espe
 
 Usar camelCase ou snake_case?
 
-Use camelCase. Esta é a convenção da EvoluServices.
+Use camelCase para todas as variáveis. Para URLs, o path e o nome dos recursos devem usar spinal-case.
 
 Variáveis em português ou inglês? Adjetivo antes ou depois do substantivo?
 
@@ -217,24 +215,97 @@ Versionamento de API, como criar uma nova versão não retrocompatível da minha
 
 Para saber como versionar sua API, consulte o API Design Guidelines na seção “Versionamento da API”.
 REST/HTTP
-Nome de ações em recurso, singular? plural? qual case?
+Como nomear URLs que acessam recursos? Singular? Plural? Qual case? Qual método HTTP?
 
 	Para saber como um endpoint deve expor o recurso para acesso, consulte a API Design Guidelines na seção “URL” > “Paths”.
 
-Como eu organizo ações numa URL REST? Quando é aplicado a um recurso, e quando é aplicado a mais de um recurso? E quando é aplicado a um sub-recurso?
+Como nomear URLs que acessam sub-recursos? Precisa incluir o recurso pai na URL? Como criar um sub-recurso?
 
-	Existe a necessidade de haver ações além do GET, POST, DELETE, PUT no recursos???
-	Digamos que o cliente queira realizar um split num pagamento, como ficaria a URL?
-	POST /apis/v2/payments/{id}/split
+	Deve-se criar um recurso com nome composto, incluindo o nome do pai e do sub-recurso. Mas se o sub-recurso puder ser considerado um recurso, pode-se criar uma URL somente com o nome do “sub-recurso”. Mas na criação (POST), será necessário um outro padrão.
 
-Como organizar o acesso a sub-recursos? Precisa ter acesso ao recurso-pai?
-A identificação de um sub-recurso deve incluir a identificação de um recurso-pai? /pai/1/filho/13 ou /filho/13 ou /pai/filho/13
+Para GET, PUT e DELETE, basta identificar o sub-recurso sem a necessidade de identificar o recurso pai.
+
+Exemplo errado:
+/apis/v2/transactions/{transactionId}/payments/{paymentId}
+
+Exemplos corretos:
+/apis/v2/transaction-payments/{paymentId}
+/apis/v2/payments/{paymentId}
+
+	Para POST de criação do sub-recurso, é necessário identificar o recurso pai.
+Exemplos errados:
+/apis/v2/transaction-payments/{transactionId}
+/apis/v2/transactions/payments/{transactionId}
+/apis/v2/payments?transactionId={transactionId}
+
+Exemplo correto:
+/apis/v2/transactions/{transactionId}/payments
+
+Como eu organizo ações complexas numa URL REST? Quando é aplicado a um recurso, e quando é aplicado a mais de um recurso? E quando é aplicado a um sub-recurso?
+
+	Quando alguma transformação específica for ser aplicada a um recurso, a ação deve ser acessível via POST se fosse um sub-recurso daquele recurso.
+	Digamos que o cliente queira realizar um split em um pagamento, a URL ficaria assim:
+POST /apis/v2/payments/{paymentId}/split
+Enquanto maneiras incorretas seriam:
+Usar outro método HTTP que não POST;
+POST /apis/v2/payments-split/{paymentId}
+POST /apis/v2/payments/split/{paymentId}
+
+	Quando uma transformação específica precisa ser aplicada a um sub-recurso, a ação deve ser acessível via POST como se fosse um sub-recurso do sub-recurso:
+	Hipoteticamente, se o payments só pudesse ser acessado pela URL /apis/v2/transaction-payments/{paymentId}, o recomendado é utilizar:
+POST /apis/v2/transaction-payments/{paymentId}/split
+
 Retornar ou não os dados do objeto criado no POST?
-Como eu nomeio a URL do recurso? singular? plural? qual case? Uso qual método HTTP? (indicar outro documento)
-Quando uma informação é sensível, quando eu dou 401, 403 e quando eu dou 404?
-Como eu devolvo os erros?
-Se um campo no retorno é opcional, omito ele ou eu retorno null?
-Se um campo na request é opcional, ele precisa ser omitido ou eu devo aceitar nulo? E vazio para strings e vazio se der trim? E [] para listas?
+
+	Não adicione os dados do objeto recém criado à resposta do POST. Use o HTTP status 201 (Created). Adicione à resposta somente os dados que não eram possível saber pela requisição realizada. Por exemplo, o identificador do recurso criado, ou a senha, caso for uma senha auto-gerada.
+
+Como eu devolvo os erros? Existe estrutura padrão para erros?
+
+	Em caso de erro, recomendamos responder um erro bem informativo para o cliente. Recomendamos usar a estrutura abaixo para que todos os detalhes do erro seja transmitido sem a perda de informações:
+{
+  "requestId": "316ee12b-c1a8-48c3-a23f-f18fd2522e29",
+  "timestamp": "2022-04-30T22:03:24Z",
+  "status": 401,
+  "method": "POST",
+  "environment": "production",
+  "apiVersion": "v1.3",
+  "endpoint": "/apis/v2/transactions/123"
+  "errorId": "123897",
+  "explanation": "When trying to authenticate with the Bearer token in the request Authorization header, it failed because the token either did not exist, was invalid or was expired.",
+  "action": "Emit a new bearer token, include that in the Authorization header and try again."
+}
+requestId: deve ser um id universal único. Por exemplo, um UUID;
+timestamp: timestamp no momento da resposta com o erro (horário do primeiro erro em caso de cache de idempotência). Pode ser sempre em UTC, pois num contexto de erro, nem sempre conseguir acesso às configurações de fuso horário do cliente;
+environment: ambiente chamado quando ocorreu o erro. Por exemplo, “staging”, “production”, “development”;
+method: o método HTTP enviado para o servidor;
+endpoint: o path do endpoint chamado, pode ser parcial. Não precisa ser completo, pois um proxy intermediário pode tornar impossível saber, caso ele manipule a URL;
+errorId: identificador único do erro na API. Não precisa ser único entre APIs, apenas dentro da própria API. Recomendamos um id sequencial por simplicidade e possibilidade de informar ao consumidor final o código do erro. Assim, ele pode informar o suporte caso necessário, e saberemos no código-fonte a origem do erro, o que facilita no processo de correção;
+explanation: a explicação deve incluir o contexto, o que se tentava fazer e a razão porque falhou. Não precisa de internacionalização;
+action: as ações sugeridas que devem ser tomadas pela aplicação cliente. Nem sempre é possível saber o que fazer de antemão e informar o desenvolvedor. Portanto, esperamos que este campo acabe ficando vazio em boa parte dos cenários. Não precisa de internacionalização;
+
+	Sabemos que em circunstâncias de erro, pode ser mais complicado captar informações, então recomendamos fazer um código robusto durante a construção desta estrutura (vários try-catch, por exemplo).
+
+Quando uma informação é sensível, a API deve responder 401? 403? 404?
+
+Responda 401 somente se o token de autenticação não existir, estiver inválido, ou então estiver expirado.
+Responda 403 somente se o token for válido (existe e não está expirado) e as permissões atribuídas a ele não são suficientes para realizar a operação. Caso as permissões do token não sejam suficientes nem mesmo para realizar a leitura daquele recurso, responda 404. Caso a permissão de leitura permita ler parte dos dados que seriam retornados, responda 403.
+
+Se um campo no retorno é opcional, omito ele ou eu retorno nulo? E para listas ([])?
+
+	Retorne null no JSON. Isso facilita a curva de aprendizagem da API. Isso é mais informativo para o desenvolvedor da aplicação cliente do que omitir um parâmetro. A omissão do parâmetro é menos prática, pois pode gerar mais dúvidas para o desenvolvedor:
+Será que eu chamei o endpoint correto?
+
+	Não se esqueça de incluir na especificação da sua API as condições de quando o valor é retornado null e de quando o valor é preenchido. Valores mandatórios não devem ser nulos. Se o valor puder ser nulo, ele deverá ser considerado opcional.
+
+	Caso o parâmetro opcional for uma lista/array, retorne nulo se a condição na documentação de o campo opcional não ser retornado acontecer. Caso contrário, retorne o valor do parâmetro, o qual pode ser uma lista vazia ([]).
+
+
+Se um campo na request é opcional, ele precisa ser omitido ou eu devo aceitar nulo? E vazio para strings e vazio se der trim? E [] para listas/array?
+
+	Para campos da requisição opcionais, a sua API deve aceitar tanto campos omitidos como nulos da mesma forma.
+	Para os parâmetros string, o valor "" ou com espaços "   " deve ser aceito como campo preenchido, mas sua API deve retornar um erro 422 caso este parâmetro não seja semanticamente correto. Normalmente se vê este tipo de erro 400, mas apenas erros de sintaxe deveriam ser classificados como 400. Os erros semânticos deveriam usar o HTTP status 422 (https://www.httpstatus.com.br/422/).
+	Já parâmetros com valor de lista, 
+
 Quando eu devo usar os redirects? Usar para chamadas async?
 Como responder a requisições de processamento assíncrono?
 Operação

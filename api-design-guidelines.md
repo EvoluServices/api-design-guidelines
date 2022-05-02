@@ -27,9 +27,9 @@ Regras para códigos de retorno HTTP
 URL
 Schemes
 Paths
-Regras para recursos e subrecursos
-Regras para nomenclatura dos recursos e subrecursos
-Regras para identificação dos recursos e subrecursos
+Regras para recursos e sub-recursos
+Regras para nomenclatura dos recursos e sub-recursos
+Regras para identificação dos recursos e sub-recursos
 Query Parameters
 Regras de nomenclatura
 JSON
@@ -41,10 +41,8 @@ Enums
 Numbers
 Null
 Tipos de valores comuns no JSON
-Endereço
 Valor monetário
 Datas
-Porcentagem
 Erros
 400 (Bad Request)
 401 (Unauthorized)
@@ -63,15 +61,13 @@ Introdução
 
 Este guia foi criado com o intuito de apoiar os desenvolvedores no design de APIs fornecidas pela Evoluservices. As nossas APIs são construídas seguindo os princípios descritos aqui. Porém, este documento não foi criado com o propósito de detalhar todas as decisões possíveis durante a criação de uma API. Portanto, irá descrever algumas regras de alto-nível que devem ser seguidas, mas que também não representam uma verdade absoluta que não pode ser revista, dependendo do caso específico. 
 Como a arquitetura adotada é a arquitetura REST, boa parte deste documento trata-se das boas práticas HTTP e REST.
-Além disso, o guia sempre está aberto às modificações de tal forma que haja maior concordância possível com as opiniões dos desenvolvedores envolvidos.
+Este guia sempre está aberto às modificações de tal forma que haja maior concordância possível com as opiniões dos desenvolvedores envolvidos.
+Além disso, este documento possui caráter mais informativo. Para facilitar a busca de dúvidas pontuais, nós criamos um FAQ respondendo as potenciais perguntas que um desenvolvedor pode ter durante a implementação de um novo API da Evoluservices.
 
 Convenções usadas no guia
 
 As palavras-chave "PRECISA", "NÃO PODE", "OBRIGATÓRIO", "DEVERÁ", "NÃO DEVERÁ", "DEVE", "NÃO DEVE", "RECOMENDADO", "PODE" e "OPCIONAL" neste guia serão destacadas em NEGRITO E COM LETRA MAIÚSCULA. Elas são interpretadas conforme descrito no [RFC2119](https://www.ietf.org/rfc/rfc2119.txt), porém, de maneira traduzida.
-Para mais detalhes dessas palavras-chave, você pode consultar a Apêndice A.
-(Acho que precisamos passar a tradução para cá, senão vai ficar muito difícil de entender o que cada palavra quer dizer exatamente)
-
-
+Para mais detalhes dessas palavras-chave, você pode consultar a Apêndice A
 Escopo do documento
 	Este documento irá cobrir APIs REST. Se sua API usar outra arquitetura, tenha certeza que não poderia ser substituída por uma API REST. Outras arquiteturas não fazem parte do escopo deste documento.
 
@@ -87,7 +83,7 @@ Recursos
 
 Para entender melhor este guia é necessário entender a definição de recursos.
 
-Como dita na [dissertação do Roy Fielding](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm), o recurso é definido como abstração chave da informação no padrão REST. Qualquer informação que pode ser nomeada pode ser considerada um recurso. Nas APIs da Evoluservices, por exemplo, podem observar alguns recursos que são frequentemente observados como Estabelecimento, Transação, Pagamento e entre outros. Um recurso também pode conter um outro conjunto de recursos, este conjunto também é denominado como subrecursos. Uma Transação (recurso), por exemplo, pode conter um conjunto de Pagamentos (subrecursos). 
+Como dita na [dissertação do Roy Fielding](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm), o recurso é definido como abstração chave da informação no padrão REST. Qualquer informação que pode ser nomeada pode ser considerada um recurso. Nas APIs da Evoluservices, por exemplo, podem observar alguns recursos que são frequentemente observados como Estabelecimento, Transação, Pagamento e entre outros. Um recurso também pode conter um outro conjunto de recursos, este conjunto também é denominado como sub-recursos. Uma Transação (recurso), por exemplo, pode conter um conjunto de Pagamentos (sub-recursos). 
 
 Outra forma de entender o que é um recurso, é algo que você pode “recorrer a” quando você precisar.
 
@@ -131,21 +127,20 @@ Ao utilizar o método GET, o recurso envolvido NÃO PODE ser modificado de manei
 
 Método POST
 
-Para a criação de recursos e subrecursos, o método POST DEVE ser utilizado. 
+Para a criação de recursos e sub-recursos, o método POST DEVE ser utilizado. 
 Após criar o recurso, se for feita a mesma requisição novamente, DEVE retornar um aviso que o recurso já foi criado, ao invés de criar o mesmo recurso novamente e ocorrer duplicação.
-No caso da criação de recursos ou subrecursos, a resposta da requisição deve ter status code 201 (Created), para indicar que um recurso foi criado. Para mais detalhes, consultar a seção de “Códigos de retorno HTTP”.
-(se houver um status code HTTP específico, acho uma boa oportunidade colocar aqui)
-Para operações complexas, como em algumas operações feitas ao nível da regra de negócio, é RECOMENDADO que seja utilizado o método POST.
+No caso da criação de recursos ou sub-recursos, a resposta da requisição DEVE retornar com status code 201 (Created), para indicar que um recurso foi criado. Para mais detalhes, consultar a seção de “Códigos de retorno HTTP”.
+Para operações complexas, como em algumas operações feitas ao nível da regra de negócio, é RECOMENDADO que seja utilizado o método POST. Para este caso, é RECOMENDADO que retorne o status 200 (OK).
 Esta operação não é idempotente e, por isso, É RECOMENDADO que faça o procedimento citado [aqui](Link para o local onde diz sobre a idempotência em detalhes]
 
 Método PUT
 
-Para modificar algum valor dentro de um recurso existente ou para reestabelecer um relacionamento entre este recurso com algum subrecurso existente, DEVE-SE utilizar o método PUT. 
+Para modificar algum valor dentro de um recurso existente ou para reestabelecer um relacionamento entre este recurso com algum sub-recurso existente, DEVE-SE utilizar o método PUT. 
 
 Método DELETE
 
-Para remover um recurso ou um subrecurso existente, DEVE-SE utilizar o método DELETE. 
-No caso em que é modificado um valor dentro de um recurso ou subrecurso que o considera como removido, ao invés de removê-lo literalmente (soft delete), DEVE-SE, mesmo assim, utilizar este método.
+Para remover um recurso ou um sub-recurso existente, DEVE-SE utilizar o método DELETE. 
+No caso em que é modificado um valor dentro de um recurso ou sub-recurso que o considera como removido, ao invés de removê-lo literalmente (soft delete), DEVE-SE, mesmo assim, utilizar este método.
 
 Requisições e Respostas HTTP
 
@@ -396,11 +391,31 @@ Nos APIs da Evoluservices, o path DEVE sempre começar como prefixo /apis/, segu
 
 Regras para recursos e sub-recursos
 
-Um recurso individual deve ser representado no formato /nome-do-recurso/{id-do-recurso} no path.
-Para representar um sub-recurso de um recurso individual, é RECOMENDADO criar um nome que represente a relação do recurso e do sub-recurso, por exemplo, ao invés de /recurso/{id-do-recurso}/subrecursos, utilizar, /recurso-subrecursos/.
-No caso em que quer representar um sub-recurso em específico, é RECOMENDADO que, ao invés de /recurso/{id-do-recurso}/subrecursos/{id-do-subrecurso}, utilizar o formato /recurso-subrecursos/{id-do-subrecurso}.
+Na tabela abaixo, mostra as recomendações para cada tipo de representação dos recursos ou sub-recursos:
 
-Regras para identificação dos recursos e subrecursos
+REPRESENTAÇÕES
+NÃO RECOMENDADO
+RECOMENDADO
+Recurso individual
+/{id-do-recurso}
+/nome-do-recurso/{id-do-recurso}
+Sub-recursos de um recurso individual
+/recursos/{id-do-recurso}/sub-recursos
+/recursos-sub-recursos
+Sub-recurso individual
+/recurso/{id-do-recurso}/sub-recursos/{id-do-sub-recurso}
+/recursos-sub-recursos/{id-do-sub-recurso}
+Operações Complexas usando método POST
+/recursos/nome-da-operação
+/recursos/{id-do-recurso}/nome-da-operacao
+
+
+
+No caso de uma operação complexa usando método POST, É PERMITIDO que seja um verbo ao invés de um substantivo, por referir a uma ação sobre o recurso ou sub-recurso, ao invés de referi-lo diretamente.
+
+
+
+Regras para identificação dos recursos e sub-recursos
 
 É RECOMENDADO que para ID do recurso seja utilizado um prefixo que deixe claro o recurso ao qual se refere com um underline no final (_), seguido de UUID.
 
@@ -422,7 +437,7 @@ Para requisições POST, NÃO DEVE utilizar os query parameters, por conta do us
 
 Regras de nomenclatura para query parameters
 
-Se uma variável de query for um nome composto, as palavras DEVEM estar separadas com underline (_).
+Se uma variável de query for um nome composto, as palavras DEVEM usar camelCase.
 Para o uso de mais de um query parameter numa URL, as queries DEVEM ser separados por caractere and (&)
 Para o uso de mais de um valor dentro de uma mesma variável do query parameter, os valores DEVEM estar separados por uma vírgula (,).
 Nas queries, DEVEM apenas usar caracteres minúsculos, alfanuméricos e underlines. Em termos de codificação, DEVE ser percent-encoded.
@@ -457,13 +472,18 @@ Os valores de Enum DEVEM apenas aceitar caracteres alfanuméricos e underline(_)
 
 Numbers
 
-No caso dos campos numéricos, é RECOMENDADO que, em casos em que o seu valor não necessita de números muito grandes, use o formato em int (ou int32) e para números muito grandes usem o formato em long (ou int64). Por exemplo, para parcelas de uma transação, o número não passaria dos 100 e formato int seria o ideal. No caso do valor da transação que possibilita ser um número na casa dos milhões, seria ideal utilizar o campo no formato long.
+No caso dos campos numéricos, é RECOMENDADO que, em casos em que o seu valor não necessita de números muito grandes, use o formato em int (ou int32) e para números muito grandes usem o formato em long (ou int64). Por exemplo, para parcelas de uma transação, o número não passaria dos 100 e formato int seria o ideal. No caso do valor da transação, que possibilita ser um número na casa dos milhões, seria ideal utilizar o campo no formato Long.
 É RECOMENDADO que, para consistência do valor, determine um limite mínimo e máximo permitido para um campo numérico.
+
+Arrays
+
+Nos campos que são arrays (vetores), É RECOMENDADO que haja um tamanho mínimo e máximo permitido. O tamanho mínimo permitido tende a ser 0 ou 1, caso pelo menos um valor deva ser incluído. 
 
 Null
 Se o campo é do tipo Null, significa que o campo aceita valores nulos. Para representá-lo uma propriedade na forma campo: null  DEVE estar explícito no JSON. 
-O fato do campo não estar explícito no JSON não significa que o campo é do tipo Null. Neste caso, é definido como tipo Undefined.
-Valor null também é diferente de outros tipos de valores que podem indicar um campo vazio como array vazio ([]) ou String vazio (“”)
+O fato do campo não estar explícito no JSON não significa que o campo é do tipo Null. Neste caso, é definido como tipo Undefined. Portanto, na resposta, caso o campo do JSON seja um valor opcional e nenhum valor é setado, DEVE deixá-lo explícito e setar o seu valor como null.
+Valor null também é diferente de outros tipos de valores que podem indicar um campo vazio como array vazio ([]) ou String vazio (“”). Por isso, na resposta, no caso em que o tipo de campo seja Array ou String e seja opcional, o campo DEVE  ser explicitado e incluir seu valor como null, e não com um dos valores citados anteriormente, caso não deseje enviar nenhum valor em tal campo na requisição.
+Para as requisições, os APIs DEVEM, para os campos opcionais, aceitar tanto a sua omissão como setar o seu valor como Null.
 
 Tipos de valores comuns no JSON
 
@@ -474,9 +494,10 @@ O valor monetário NÃO PODE ser um valor negativo.
 
 Datas
 
-As datas que indicam um instante, DEVEM usar o formato “YYYY-MM-DDTHH:mm:ssZ” para datas UTC. A inclusão de frações de segundo para maior precisão É PERMITIDA. O “T” entre o dia e a hora serve como separador.  Ao invés do “T”, PODE-SE também utilizar o caractere espaço (“ “), ficando no formato “YYYY-MM-DD HH:mm:ssZ”.
-Para timezones que não são UTC, DEVE-SE usar os caracteres “+” ou “-” e as horas de diferença do UTC. Por exemplo, se a data é 2022-04-27 às 11:48:35 da manhã em UTC, em Brasília, que possui timezone UTC-3, o formato da data ficaria “2022-04-27T13:48:35-3:00”. Este mesmo horário em Paris seria “2022-04-27T1:48:35+2:00”
-
+As datas que indicam um instante, DEVEM usar o formato “YYYY-MM-DDTHH:mm:ssZ” para datas UTC. A inclusão de frações de segundo para maior precisão é PERMITIDA. O “T” entre o dia e a hora serve como separador.  Ao invés do “T”, PODE-SE também utilizar o caractere espaço (“ “), ficando no formato “YYYY-MM-DD HH:mm:ssZ”.
+Para timezones que não são UTC, DEVE-SE usar os caracteres “+” ou “-” e as horas de diferença do UTC. Por exemplo, se a data é 2022-04-27 às 11:48:35 da manhã em UTC, em Brasília, que possui timezone UTC-3, o formato da data ficaria “2022-04-27T08:48:35-3:00”. Este mesmo horário em Paris seria “2022-04-27T13:48:35+2:00”
+Se sua API está usando “-00:00” como timezone, significa que ela está com o timezone desconhecido. Ela DEVE ser alterada para usar ou UTC (“Z” ou “+00:00”).
+Você pode consultar mais detalhes no [FAQ] (LInk para o FAQ]. Lá contém os exemplos e outras formas de representação das datas.
 
 Erros
 
@@ -530,7 +551,7 @@ Ao criar uma API, você terá pelo menos dois itens distintos para versionar: a 
 Na implementação, ou seja, no serviço da API, RECOMENDAMOS que seja usado versionamento [semântico](https://semver.org/lang/pt-BR/).
 Na especificação OpenAPI, a API DEVE seguir o  padrão semântico com adição do prefixo “v” e remoção da versão do PATCH.
 
-Os endpoints da API DEVEM refletir a versão da API, mas apenas a versão MAJOR. Todos os endpoints das APIs devem começar com “/apis/v{major_version}/”. Mas você pode configurar um proxy para não deixar este prefixo na sua aplicação.
+Os endpoints da API DEVEM refletir a versão da API, mas apenas a versão MAJOR. Todos os endpoints das APIs DEVEM começar com “/apis/v{major_version}/”. Mas você pode configurar um proxy para não deixar este prefixo na sua aplicação.
 
 Exemplo errado:
 1.3 (faltou o “v” de versão)
@@ -549,6 +570,9 @@ Scopes OAuth 2.0
 Com exceção da primeira versão, que utiliza o BasicAuth ou JWT, os APIs da Evoluservices utilizam a autenticação do tipo OAuth 2.0.
 Na autenticação em OAuth 2.0, existe um mecanismo chamado Scopes, que possibilita limitar o acesso às operações efetuadas por APIs através do token de autenticação.
 Cada scope é representado por um string, no seguinte formato:
+
+
+
 
 scope.operation
 \___/ \_______/
@@ -580,5 +604,5 @@ NÃO PODE ou o termo PROIBIDO significa que é uma proibição absoluta na espec
 DEVERÁ, DEVE ou DEVEM, significa que pode existir algumas circunstâncias em particular, que a regra deve ser desconsiderada, mas todas as implicações devem ser compreendidas e cuidadosamente relevadas antes de escolher um curso diferente.
 NÃO DEVERÁ, NÃO DEVE ou NÃO DEVEM, significa que pode existir algumas circunstâncias em particular em que a regra pode ser aceita, mas todas as implicações devem ser compreendidas e cuidadosamente relevadas antes de implementar qualquer comportamento descrito com esta palavra-chave.
 RECOMENDADO significa que a regra é aceitável, porém, não há convicções que que ela DEVE ser absoluta.
-PODE ou o adjetivo OPCIONAL, significa que a regra é verdadeiramente opcional. Um fornecedor pode optar por incluir a regra porque um
+PODE, É PERMITIDO ou o adjetivo OPCIONAL, significa que a regra é verdadeiramente opcional. Um fornecedor pode optar por incluir a regra porque um
 determinado mercado exige ou porque um fornecedor sente que a aplicação da regra aprimora o produto, enquanto que outro fornecedor pode omitir-la. Uma implementação que não inclui uma opção específica DEVE ser    preparado para interoperar com outra implementação que não inclui a opção, embora talvez com funcionalidade reduzida.  No mesmo fluxo, uma implementação que inclui uma opção específica DEVE estar preparada para interoperar com outra implementação que não inclui tal opção (exceto para o recurso que a opção fornece).
